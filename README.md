@@ -1,4 +1,4 @@
-# 🎯 FocusTab
+# 🎯 FocusTab (vibecoded project)
 
 A calm little dashboard that lives in your browser toolbar. Click the FocusTab
 icon and a popup greets you with the time, a short focus list, and a quote for
