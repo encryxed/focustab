@@ -1,0 +1,945 @@
+/*
+  styles.css — how FocusTab looks.
+
+  A few ideas worth knowing as you read this:
+
+  - CSS custom properties (the "--name: value" lines under :root) are reusable
+    variables. We define our colors once, then reference them everywhere with
+    var(--name). Change one line, the whole theme updates.
+
+  - The @media (prefers-color-scheme: dark) block near the bottom overrides those
+    variables when the user's system is in dark mode. That's the entire cost of a
+    proper light/dark theme — no toggle, no JavaScript.
+
+  - We use a "system font stack": instead of downloading a web font (which would
+    need a network request and break our offline promise), we ask for whatever
+    nice default font the user's OS already has.
+*/
+
+/*
+  THEMES. Each theme is just a set of color variables. Settings puts a
+  data-theme attribute on <html> (e.g. data-theme="midnight") and the matching
+  block below wins. "system" has no colors of its own — it uses the light
+  defaults, and the media query near the bottom swaps in dark when the OS is
+  dark. That's why "System" follows your computer automatically.
+*/
+:root {
+  /* Light theme = the default (also used by data-theme="light" and "system"). */
+  --bg:        #f4f5f7;
+  --surface:   #ffffff;
+  --text:      #1f2933;
+  --text-soft: #7b8794;
+  --accent:    #4f7cff;
+  --border:    #e4e7eb;
+  --done:      #9aa5b1;
+
+  /* Non-color tokens, shared by every theme. */
+  --radius: 14px;
+  --gap: 20px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+          sans-serif;
+}
+
+/* Plain dark. */
+:root[data-theme="dark"] {
+  --bg: #16181d; --surface: #1f2229; --text: #e6e8eb;
+  --text-soft: #8b93a1; --accent: #6b93ff; --border: #2b2f38; --done: #5b6470;
+}
+
+/* Midnight — deep indigo blues. */
+:root[data-theme="midnight"] {
+  --bg: #0b1026; --surface: #141a35; --text: #e6ebff;
+  --text-soft: #8a93c2; --accent: #5b8cff; --border: #232a4d; --done: #4a5280;
+}
+
+/* Forest — dark greens. */
+:root[data-theme="forest"] {
+  --bg: #0d1a14; --surface: #14261d; --text: #e4f0e8;
+  --text-soft: #86a795; --accent: #3fbf7f; --border: #1f3a2c; --done: #4d6b58;
+}
+
+/* Rosé — soft warm light. */
+:root[data-theme="rose"] {
+  --bg: #fdf2f4; --surface: #ffffff; --text: #3a2a2e;
+  --text-soft: #9c7a82; --accent: #e5548a; --border: #f3dbe1; --done: #c9a9b1;
+}
+
+* {
+  box-sizing: border-box; /* padding/borders count inside an element's width */
+}
+
+/*
+  A browser popup sizes itself to fit its content, so we give the body a fixed
+  width. That width IS the popup's width. 340px feels roomy but tidy.
+*/
+body {
+  width: 340px;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  padding: 16px;
+}
+
+/* The column that holds the three widgets, stacked. */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.widget {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.widget-title {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+/* ---------- Top bar + settings ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -6px; /* snug against the first widget */
+}
+.brand {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+}
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.icon-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* The settings panel covers the popup while it's open. */
+.settings-panel {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  padding: 16px;
+  z-index: 10;
+  overflow-y: auto;
+}
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.settings-head .widget-title { margin: 0; }
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.setting-label { font-size: 0.9rem; font-weight: 600; }
+
+/* A two-option segmented toggle (12-hour / 24-hour). */
+.segmented {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.seg-btn {
+  border: none;
+  background: var(--bg);
+  color: var(--text-soft);
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.seg-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Theme row lays its options out in a grid below the label. */
+.setting-col { flex-direction: column; align-items: stretch; }
+.setting-col .setting-label { margin-bottom: 10px; }
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.theme-btn {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.theme-btn:hover { border-color: var(--accent); }
+.theme-btn.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+/* Replay-tour button in Settings. */
+.replay-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.replay-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- Signature / credit ---------- */
+.credit {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+  padding: 4px 0 2px;
+  line-height: 1.6;
+}
+.credit a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.credit a:hover { text-decoration: underline; }
+.settings-credit {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- First-run tour ---------- */
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 100;
+}
+/* The spotlighted element sits above the backdrop with a glowing ring. */
+.tour-target {
+  position: relative;
+  z-index: 101;
+  border-radius: 12px;
+  box-shadow: 0 0 0 3px var(--accent), 0 0 0 7px color-mix(in srgb, var(--accent) 35%, transparent);
+  pointer-events: none; /* look, don't touch, during the tour */
+}
+.tour-card {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 110;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+.tour-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.tour-close:hover { color: var(--text); }
+.tour-title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding-right: 18px;
+}
+.tour-body {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-soft);
+}
+.tour-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tour-spacer { flex: 1; }
+.tour-btn {
+  border: none;
+  border-radius: 9px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tour-back, .tour-skip {
+  background: transparent;
+  color: var(--text-soft);
+}
+.tour-back:hover, .tour-skip:hover { color: var(--text); }
+.tour-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.tour-primary:hover { filter: brightness(1.05); }
+.tour-progress {
+  display: block;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+/* ---------- Clock + greeting ---------- */
+.clock-widget {
+  text-align: center;
+  padding: 24px 18px;
+}
+
+.clock {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums; /* digits keep equal width, so it doesn't jitter */
+}
+
+.greeting {
+  margin: 6px 0 0;
+  color: var(--text-soft);
+  font-size: 1.05rem;
+}
+
+.name {
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 1px dashed transparent;
+}
+.name:hover,
+.name:focus {
+  border-bottom-color: var(--accent);
+  outline: none;
+}
+
+/* ---------- To-do list ---------- */
+.todo-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.todo-input {
+  flex: 1; /* grow to fill the row */
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.todo-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.todo-add {
+  width: 42px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.todo-add:hover { filter: brightness(1.05); }
+
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 8px;
+}
+.todo-item:hover { background: var(--bg); }
+
+.todo-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.todo-text {
+  flex: 1;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+/* When a task is done we grey it out and strike it through. */
+.todo-item.done .todo-text {
+  color: var(--done);
+  text-decoration: line-through;
+}
+
+.todo-delete {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.todo-delete:hover { color: #e5484d; background: var(--bg); }
+
+/* Timer button (⏱) — an accent-tinted round button so it's clearly visible. */
+.todo-timer {
+  border: none;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.todo-timer:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+
+/* Pill shown when a reminder is set (always visible; click to cancel). */
+.todo-remind-badge {
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.todo-remind-badge:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* The "remind me in…" picker under a task. */
+.timer-picker {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  margin: 2px 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.timer-picker-label {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+.timer-quick {
+  display: flex;
+  gap: 6px;
+}
+.timer-q-btn {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 7px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.timer-q-btn:hover { border-color: var(--accent); color: var(--accent); }
+.timer-custom {
+  display: flex;
+  gap: 6px;
+}
+.timer-num {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.timer-num:focus { outline: none; border-color: var(--accent); }
+.timer-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.timer-num { -moz-appearance: textfield; }
+.timer-set {
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  padding: 0 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.timer-set:hover { filter: brightness(1.05); }
+
+.todo-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  min-height: 20px;
+}
+
+.todo-count {
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+
+.todo-clear {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  cursor: pointer;
+  visibility: hidden; /* only shows when there is something to clear */
+}
+.todo-clear:hover { color: var(--text); }
+
+/* ---------- Remind me about a tab ---------- */
+
+/* The drop target. It grows and glows while a tab is dragged over it. */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.drop-zone.drag-over {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  transform: scale(1.02);
+}
+/* The "click into place" bounce, added briefly by JS when a tab is dropped. */
+.drop-zone.landed {
+  border-style: solid;
+  border-color: var(--accent);
+  animation: land 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes land {
+  0%   { transform: scale(1.12); }
+  60%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+/* The list of open tabs you can drag. */
+.tab-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 168px;
+  overflow-y: auto;
+}
+
+.tab-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  cursor: grab;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.tab-card:hover { border-color: var(--accent); }
+.tab-card:active { cursor: grabbing; }
+.tab-card.dragging { opacity: 0.5; transform: scale(0.98); }
+
+.tab-favicon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
+.tab-title {
+  flex: 1;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The ⏰ cue on the right of each tab, hinting the card is clickable. */
+.tab-cue {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+.tab-card:hover .tab-cue { opacity: 1; }
+
+.tab-empty {
+  list-style: none;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 8px;
+}
+
+/* The "when should I remind you?" panel. */
+.time-picker {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  animation: slide-up 0.2s ease;
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.picker-title {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+.picker-title strong { color: var(--text); }
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.preset {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.preset:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.preset-label { font-size: 0.85rem; font-weight: 600; }
+.preset-when { font-size: 0.72rem; color: var(--text-soft); }
+
+/* ---- Custom time: day slider + big HH:MM sliders ---- */
+.custom {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.custom-heading {
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  text-align: center;
+}
+.custom-block { margin-bottom: 16px; }
+
+.custom-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+/* Big, readable typed inputs. */
+.num-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.num-input:focus { outline: none; border-color: var(--accent); }
+/* Hide the tiny up/down spinners — people just type. */
+.num-input::-webkit-inner-spin-button,
+.num-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.num-input { -moz-appearance: textfield; }
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.input-row .num-input { width: 80px; flex-shrink: 0; }
+.input-suffix {
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+/* The typed 12-hour clock: [hour] : [min] [AM|PM]. */
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.time-num { width: 64px; flex-shrink: 0; }
+.time-colon {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.ampm-toggle {
+  display: flex;
+  margin-left: 4px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.ampm-btn {
+  border: none;
+  background: var(--bg);
+  color: var(--text-soft);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ampm-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-set {
+  border: none;
+  border-radius: 9px;
+  padding: 0 16px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-set:hover { filter: brightness(1.05); }
+.btn-set-full {
+  width: 100%;
+  padding: 11px 16px;
+}
+
+.btn-cancel {
+  margin-top: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.btn-cancel:hover { color: var(--text); }
+
+/* Reminders you've already scheduled. */
+.reminder-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.reminder-text {
+  flex: 1;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reminder-when {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.reminder-del {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.reminder-del:hover { color: #e5484d; }
+
+/* ---------- Quote ---------- */
+.quote-widget {
+  text-align: center;
+}
+.quote {
+  margin: 0;
+}
+.quote-text {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  font-style: italic;
+}
+.quote-text::before { content: "\201C"; } /* opening curly quote */
+.quote-text::after  { content: "\201D"; } /* closing curly quote */
+
+.quote-author {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+.quote-author::before { content: "— "; }
+
+/* ---------- Reminder alert popup window ---------- */
+/* This page is its own window, so override the fixed popup width. */
+.alert-body {
+  width: auto;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.alert {
+  text-align: center;
+  max-width: 320px;
+}
+.alert-bell {
+  font-size: 2.4rem;
+  animation: ring 0.7s ease-in-out 2;
+  transform-origin: 50% 0;
+}
+@keyframes ring {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(14deg); }
+  75% { transform: rotate(-14deg); }
+}
+.alert-heading {
+  margin: 6px 0 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.alert-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  margin-bottom: 18px;
+}
+.alert-title {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.alert-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---------- System theme follows the OS ---------- */
+/* Only "System" (and the initial state before JS sets an attribute) tracks the
+   OS. Explicit themes above are unaffected because they set their own colors. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"],
+  :root:not([data-theme]) {
+    --bg:        #16181d;
+    --surface:   #1f2229;
+    --text:      #e6e8eb;
+    --text-soft: #8b93a1;
+    --accent:    #6b93ff;
+    --border:    #2b2f38;
+    --done:      #5b6470;
+  }
+}

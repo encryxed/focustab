@@ -1,0 +1,37 @@
+<!--
+  reminder.html — the little popup WINDOW that appears when a reminder fires.
+
+  The background service worker opens this page as a small always-on-top popup
+  window (chrome.windows.create) and passes the reminder details in the URL.
+  Unlike the service worker, a real page CAN play a sound — so this is also
+  where the soft chime lives (js/reminder-alert.js).
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FocusTab reminder</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="alert-body">
+  <div class="alert">
+    <div class="alert-bell">🔔</div>
+    <p class="alert-heading">Time to revisit</p>
+
+    <div class="alert-tab">
+      <img id="alert-favicon" class="tab-favicon" alt="" />
+      <span id="alert-title" class="alert-title"></span>
+    </div>
+
+    <div class="alert-actions">
+      <button id="alert-open" class="btn-set btn-set-full" type="button">
+        Open the page
+      </button>
+      <button id="alert-dismiss" class="btn-cancel" type="button">Dismiss</button>
+    </div>
+  </div>
+
+  <script src="js/settings.js"></script>
+  <script src="js/reminder-alert.js"></script>
+</body>
+</html>

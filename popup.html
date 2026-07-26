@@ -1,0 +1,191 @@
+<!--
+  popup.html — the FocusTab toolbar popup.
+
+  This page opens as a small panel when you click the FocusTab icon in the
+  browser's toolbar (see "action" in manifest.json). A popup sizes itself to fit
+  its content, so css/styles.css gives the body a fixed, compact width.
+
+  It only holds the STRUCTURE (the boxes). The look lives in css/styles.css and
+  the behaviour lives in the js/ files, loaded at the bottom. Loading scripts at
+  the very end means the HTML elements already exist by the time our JavaScript
+  runs and tries to find them.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FocusTab</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <main class="dashboard">
+
+    <!-- Top bar: brand on the left, settings gear on the right. -->
+    <header class="topbar">
+      <span class="brand">FocusTab</span>
+      <button id="settings-gear" class="icon-btn" type="button"
+              aria-label="Settings" title="Settings">⚙</button>
+    </header>
+
+    <!-- Widget 1: clock + greeting -->
+    <section class="widget clock-widget">
+      <div id="clock" class="clock">--:--</div>
+      <p class="greeting">
+        <span id="greeting-text">Hello</span>,
+        <!-- The name is editable: clicking it lets you type your own. -->
+        <span id="name" class="name" tabindex="0" role="button"
+              title="Click to change your name">friend</span>
+      </p>
+    </section>
+
+    <!-- Widget: remind me about a tab (the drag-and-drop feature) -->
+    <section class="widget remind-widget">
+      <h2 class="widget-title">Remind me about a tab</h2>
+
+      <!-- Drop target. Dragging a tab card over it makes it glow; dropping a
+           tab here opens the time picker below. -->
+      <div id="drop-zone" class="drop-zone">
+        <span class="drop-hint">Click a tab below to set a reminder —
+          or drag one up here</span>
+      </div>
+
+      <!-- The list of your open tabs, filled in by js/remind.js. Each is a
+           draggable card. -->
+      <ul id="tab-list" class="tab-list"></ul>
+
+      <!-- The "when should I remind you?" panel. Hidden until a tab is dropped. -->
+      <div id="time-picker" class="time-picker" hidden>
+        <p class="picker-title">Remind me about
+          <strong id="picker-tab-title"></strong></p>
+        <div id="preset-grid" class="preset-grid"></div>
+
+        <!-- Custom time: typed number of days + a typed 12-hour clock. -->
+        <div class="custom">
+          <p class="custom-heading">Or choose your own</p>
+
+          <div class="custom-block">
+            <label class="custom-label" for="day-input">In how many days</label>
+            <div class="input-row">
+              <input type="number" id="day-input" class="num-input"
+                     min="0" max="365" value="0" inputmode="numeric" />
+              <span class="input-suffix">days from now (0 = today)</span>
+            </div>
+          </div>
+
+          <div class="custom-block">
+            <label class="custom-label">At what time</label>
+            <div class="time-inputs">
+              <input type="number" id="hour-input" class="num-input time-num"
+                     min="1" max="12" value="9" inputmode="numeric" />
+              <span class="time-colon">:</span>
+              <input type="number" id="min-input" class="num-input time-num"
+                     min="0" max="59" value="0" inputmode="numeric" />
+              <div class="ampm-toggle" id="ampm-toggle">
+                <button type="button" id="am-btn" class="ampm-btn active">AM</button>
+                <button type="button" id="pm-btn" class="ampm-btn">PM</button>
+              </div>
+            </div>
+          </div>
+
+          <button id="custom-set" class="btn-set btn-set-full" type="button">
+            Set reminder
+          </button>
+        </div>
+
+        <button id="picker-cancel" class="btn-cancel" type="button">Cancel</button>
+      </div>
+
+      <!-- Reminders you've already scheduled. -->
+      <ul id="reminder-list" class="reminder-list"></ul>
+    </section>
+
+    <!-- Widget 2: focus / to-do list -->
+    <section class="widget todo-widget">
+      <h2 class="widget-title">Today's focus</h2>
+
+      <form id="todo-form" class="todo-form" autocomplete="off">
+        <input id="todo-input" class="todo-input" type="text"
+               placeholder="What do you want to get done?" maxlength="120" />
+        <button type="submit" class="todo-add" aria-label="Add task">+</button>
+      </form>
+
+      <!-- The list is filled in by js/todo.js -->
+      <ul id="todo-list" class="todo-list"></ul>
+
+      <div class="todo-footer">
+        <span id="todo-count" class="todo-count"></span>
+        <button id="todo-clear" class="todo-clear" type="button">Clear completed</button>
+      </div>
+    </section>
+
+    <!-- Widget 3: quote of the day -->
+    <section class="widget quote-widget">
+      <blockquote id="quote" class="quote">
+        <p id="quote-text" class="quote-text"></p>
+        <footer id="quote-author" class="quote-author"></footer>
+      </blockquote>
+    </section>
+
+    <!-- Signature -->
+    <footer class="credit">
+      Made by
+      <a href="https://github.com/encryxed" target="_blank" rel="noopener">encryxed</a>
+      · Free &amp; open source
+    </footer>
+
+  </main>
+
+  <!-- Settings panel: hidden until the gear is clicked; covers the popup. -->
+  <div id="settings-panel" class="settings-panel" hidden>
+    <div class="settings-head">
+      <h2 class="widget-title">Settings</h2>
+      <button id="settings-close" class="icon-btn" type="button"
+              aria-label="Close settings" title="Close">×</button>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">Time format</span>
+      <div class="segmented">
+        <button id="fmt-12" class="seg-btn" type="button">12-hour</button>
+        <button id="fmt-24" class="seg-btn" type="button">24-hour</button>
+      </div>
+    </div>
+
+    <div class="setting-row setting-col" style="margin-top: 12px;">
+      <span class="setting-label">Theme</span>
+      <div class="theme-grid">
+        <button class="theme-btn" type="button" data-theme="system">System</button>
+        <button class="theme-btn" type="button" data-theme="light">Light</button>
+        <button class="theme-btn" type="button" data-theme="dark">Dark</button>
+        <button class="theme-btn" type="button" data-theme="midnight">Midnight</button>
+        <button class="theme-btn" type="button" data-theme="forest">Forest</button>
+        <button class="theme-btn" type="button" data-theme="rose">Rosé</button>
+      </div>
+    </div>
+
+    <div class="setting-row" style="margin-top: 12px;">
+      <span class="setting-label">Intro tour</span>
+      <button id="replay-tour" class="replay-btn" type="button">Replay</button>
+    </div>
+
+    <footer class="credit settings-credit">
+      FocusTab · Made by
+      <a href="https://github.com/encryxed" target="_blank" rel="noopener">encryxed</a><br />
+      Free &amp; open source · <a href="https://github.com/encryxed/focustab"
+        target="_blank" rel="noopener">View on GitHub</a>
+    </footer>
+  </div>
+
+  <!--
+    Scripts. Order matters a little: the widget files define what to do,
+    and app.js runs last to start everything once the page is ready.
+  -->
+  <script src="js/settings.js"></script>
+  <script src="js/clock.js"></script>
+  <script src="js/todo.js"></script>
+  <script src="js/quotes.js"></script>
+  <script src="js/remind.js"></script>
+  <script src="js/onboarding.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
